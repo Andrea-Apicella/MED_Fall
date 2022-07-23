@@ -6,8 +6,9 @@ import pandas as pd
 from imblearn.under_sampling import NearMiss
 from sklearn.preprocessing import LabelEncoder, normalize
 from sklearn.utils.class_weight import compute_class_weight
-from tqdm import tqdm, trange
-from wp8.pre_processing.utils import listdir_nohidden_sorted as lsdir
+from tqdm.notebook import tqdm
+
+from utils import listdir_nohidden_sorted as lsdir
 
 
 class DatasetLoader:
@@ -79,12 +80,10 @@ class DatasetLoader:
         return dataset, all_features
 
 
-def load_and_split(
-    train_actors: list, val_actors: list, train_cams: list, val_cams: list, split_ratio: float, drop_offair: bool, undersample: bool, micro_classes: bool
-) -> tuple[np.ndarray, list, np.ndarray, list, list, list]:
+def load_and_split(features_folder: str, dataset_folder: str, train_actors: list, val_actors: list, train_cams: list,
+                   val_cams: list, split_ratio: float, drop_offair: bool, undersample: bool, micro_classes: bool
+                   ) -> tuple[np.ndarray, list, np.ndarray, list, list, list]:
     # Load dataset and features
-    features_folder = "outputs/dataset/features"
-    dataset_folder = "outputs/dataset/dataset"
 
     if val_actors:
         train_dataloader = DatasetLoader(dataset_folder, features_folder, train_actors, train_cams, drop_offair)
@@ -151,7 +150,7 @@ def get_timeseries_labels_encoded(y_train, y_val, cfg) -> tuple[list, list, Labe
         s = 0
         for w in range(n_windows * n_batches):
             s = w * stride
-            labels_seq = timestep_labels[s : s + seq_len]
+            labels_seq = timestep_labels[s: s + seq_len]
             series_labels.append(mode(labels_seq))
         return series_labels
 
@@ -178,7 +177,8 @@ def get_timeseries_labels_encoded(y_train, y_val, cfg) -> tuple[list, list, Labe
     #     raise Exception("y_train_series_unique != y_val_series_unique")
 
     y_train_series_encoded = enc.fit_transform(y_train_series)
-    class_weights = compute_class_weight(class_weight="balanced", classes=np.unique(y_train_series_encoded), y=y_train_series_encoded)
+    class_weights = compute_class_weight(class_weight="balanced", classes=np.unique(y_train_series_encoded),
+                                         y=y_train_series_encoded)
     d_class_weights = dict(enumerate(class_weights))
     print(f"\nClass weights for train series: {class_weights}")
 

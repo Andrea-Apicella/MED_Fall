@@ -1,2 +1,8 @@
+dataset/data/test_videos
 vision/vision_dataset
 .DS_Store
+.idea
+*/wandb
+*/__pycache__
+__pycache__
+wandb
