@@ -16,14 +16,14 @@ class FramesExtractor:
         self.labels = labels
         self.ground_truth_folder = ground_truth_folder
         self.frame_size = frame_size
-        # self.available_sequences = len(listdir_nohidden_sorted("/home/jovyan/work/MED_Fall/vision/vision_dataset/ground_truth"))
-        #print(self.available_sequences)
+        self.available_sequences = len(listdir_nohidden_sorted("/home/jovyan/work/MED_Fall/vision/vision_dataset/ground_truth"))
+        print('Number of available sequences: ', self.available_sequences)
 
     def extract_frames(self):
         extracted_frames = []
 
         ground_truth = pd.DataFrame()
-        for _, folder in enumerate(self.videos_paths):  # add [:self.available_folders]
+        for _, folder in enumerate(self.videos_paths[:self.available_sequences]):
             folder_name = folder.replace(self.videos_folder, "")[1:]
             # t0.set_description(f"Processing folder: {folder_name}")
 
@@ -60,9 +60,12 @@ class FramesExtractor:
                         frame = tf.keras.preprocessing.image.smart_resize(frame, self.frame_size)
                         # persistent/cam
                         # actor_1_bed_cam_1_0000
-                        frame_name = f"{self.output_folder}/{cam[start:end].replace(' ', '_')}_{str(f).zfill(4)}.jpg"
+                        frame_name = f"{cam[start:end].replace(' ', '_')}_{str(f).zfill(4)}.jpg"
                         frame_name = frame_name.lower()
-                        cv2.imwrite(frame_name, frame)
+                        frame_path = f"{self.output_folder}/{frame_name}"
+                    
+                        #print(frame_path)
+                        cv2.imwrite(frame_path, frame)
                         # extracted_frames.append(frame)
                         # features = self.predict_frame(frame)
                         # folder_features.append(features)
