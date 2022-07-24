@@ -1,26 +1,29 @@
-from utils import listdir_nohidden_sorted
-from tqdm.auto import tqdm, trange
-import pandas as pd
 import os
+
 import cv2
 import numpy as np
+import pandas as pd
 import tensorflow as tf
+from tqdm.auto import tqdm, trange
+from utils import listdir_nohidden_sorted
+
 
 class FramesExtractor:
-    def __init__(self, videos_folder, labels, ground_truth_folder, frame_size=(224,224)):
+    def __init__(self, videos_folder: str, output_folder: str, labels: str, ground_truth_folder: str, frame_size: tuple[int, int] = (224, 224)) -> tuple[np.ndarray, pd.DataFrame]:
         self.videos_folder = videos_folder
+        self.output_folder = output_folder
         self.videos_paths = listdir_nohidden_sorted(self.videos_folder)
         self.labels = labels
         self.ground_truth_folder = ground_truth_folder
-        self.frame_size=frame_size
-        self.available_sequences = len(listdir_nohidden_sorted('/home/jovyan/work/MED_Fall/vision/vision_dataset/ground_truth'))
-        print(self.available_sequences)
+        self.frame_size = frame_size
+        # self.available_sequences = len(listdir_nohidden_sorted("/home/jovyan/work/MED_Fall/vision/vision_dataset/ground_truth"))
+        #print(self.available_sequences)
 
     def extract_frames(self):
         extracted_frames = []
 
         ground_truth = pd.DataFrame()
-        for _, folder in enumerate(self.videos_paths[:self.available_sequences]):
+        for _, folder in enumerate(self.videos_paths):  # add [:self.available_folders]
             folder_name = folder.replace(self.videos_folder, "")[1:]
             # t0.set_description(f"Processing folder: {folder_name}")
 
@@ -54,9 +57,13 @@ class FramesExtractor:
                         ret, frame = cap.read()
                         if not ret:
                             break
-                        frame = tf.keras.preprocessing.image.smart_resize(
-                            frame, self.frame_size)
-                        extracted_frames.append(frame)
+                        frame = tf.keras.preprocessing.image.smart_resize(frame, self.frame_size)
+                        # persistent/cam
+                        # actor_1_bed_cam_1_0000
+                        frame_name = f"{self.output_folder}/{cam[start:end].replace(' ', '_')}_{str(f).zfill(4)}.jpg"
+                        frame_name = frame_name.lower()
+                        cv2.imwrite(frame_name, frame)
+                        # extracted_frames.append(frame)
                         # features = self.predict_frame(frame)
                         # folder_features.append(features)
                         #
@@ -66,10 +73,9 @@ class FramesExtractor:
                 finally:
                     cap.release()
 
-            ground_truth = pd.concat([ground_truth,folder_ground_truth], axis=0, ignore_index=True)
-            ground_truth.drop(columns=ground_truth.columns[0],
-                    axis=1,
-                    inplace=True)
+            ground_truth = pd.concat([ground_truth, folder_ground_truth], axis=0, ignore_index=True)
+            ground_truth.drop(columns=ground_truth.columns[0], axis=1, inplace=True)
         return np.array(extracted_frames), ground_truth
+
 
 #%%
