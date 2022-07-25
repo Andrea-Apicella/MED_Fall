@@ -9,7 +9,7 @@ from utils import listdir_nohidden_sorted
 
 
 class FramesExtractor:
-    def __init__(self, videos_folder: str, output_folder: str, labels: str, ground_truth_folder: str, frame_size: tuple[int, int] = (224, 224)) -> tuple[np.ndarray, pd.DataFrame]:
+    def __init__(self, videos_folder: str, output_folder: str, labels: str, ground_truth_folder: str, frame_size: tuple[int, int] = (224, 224)) -> pd.DataFrame:
         self.videos_folder = videos_folder
         self.output_folder = output_folder
         self.videos_paths = listdir_nohidden_sorted(self.videos_folder)
@@ -78,7 +78,7 @@ class FramesExtractor:
 
             ground_truth = pd.concat([ground_truth, folder_ground_truth], axis=0, ignore_index=True)
             ground_truth.drop(columns=ground_truth.columns[0], axis=1, inplace=True)
-        return np.array(extracted_frames), ground_truth
+        return ground_truth
 
 
 #%%
