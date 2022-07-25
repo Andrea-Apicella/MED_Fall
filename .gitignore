@@ -1,5 +1,6 @@
 dataset/data/test_videos
 vision/vision_dataset/cnn_features
+vision/vision_dataset/extracted_frames
 .DS_Store
 .idea
 */wandb
