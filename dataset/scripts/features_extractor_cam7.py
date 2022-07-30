@@ -59,42 +59,37 @@ class FeaturesExtractor:
 
             video_iso_files_path = f'{folder}/videos'
 
-            frames_names = []
+            #frames_names = []
             folder_features = []
 
-            video_iso_files = listdir_nohidden_sorted(
-                video_iso_files_path)
+            cam = listdir_nohidden_sorted(
+                video_iso_files_path)[6]
             
-            video_iso_files = video_iso_files[-1]
-            
-            print('video_iso_files: ', video_iso_files)
+            print('cam: ', cam)
 
-            for _, cam in enumerate((t1 := tqdm(video_iso_files, position=1, leave=True))):
-                start = cam.rfind('/') + 1
-                end = len(cam) - 4
-                t1.set_description(
-                    f'Extracting frames from: {cam[start:].replace(" ", "_")}')
-                cap = cv2.VideoCapture(cam)
-                try:
-                    n_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-                    for f in trange(n_frames):
-                        ret, frame = cap.read()
-                        if not ret:
-                            break
+            start = cam.rfind('/') + 1
+            end = len(cam) - 4
+            cap = cv2.VideoCapture(cam)
+            try:
+                n_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                for f in trange(n_frames):
+                    ret, frame = cap.read()
+                    if not ret:
+                        break
 
-                        features = self.predict_frame(frame)
-                        folder_features.append(features)
+                    features = self.predict_frame(frame)
+                    folder_features.append(features)
 
-                        file_name = f'{cam[start:end].lower().replace(" ", "_")}_{str(f).zfill(4)}'
-                        frames_names.append(file_name)
+                    #file_name = f'{cam[start:end].lower().replace(" ", "_")}_{str(f).zfill(4)}'
+                    #frames_names.append(file_name)
 
-                finally:
-                    cap.release()
+            finally:
+                cap.release()
 
-            df = pd.concat(
-                [labels_sheet] * len(video_iso_files), ignore_index=True)  # type: ignore
+            #df = pd.concat(
+                #[labels_sheet] * len(video_iso_files), ignore_index=True)  # type: ignore
 
-            df["frame_name"] = pd.Series(frames_names)
+            #df["frame_name"] = pd.Series(frames_names)
 
             # save compressed features as npz files
             folder_features = np.asarray(folder_features).squeeze()
@@ -120,4 +115,16 @@ class FeaturesExtractor:
         
         
 if __name__ == "__main__":
-    pass
+    import tensorflow as tf
+    projectdir='/home/jovyan/work/MED_Fall'
+    
+    print(os.path.isfile(f'{projectdir}/vision/models/vgg_features_extractor.h5'))
+    
+
+    fe = FeaturesExtractor(
+        videos_folder = '/home/jovyan/work/persistent/DATASET_WP8',
+        features_extractor = tf.keras.models.load_model(f'{projectdir}/vision/models/vgg_features_extractor.h5'),
+        preprocess_input=tf.keras.applications.vgg16.preprocess_input,
+    )
+    
+    fe.extract_features(dest=f'{projectdir}/vision/vision_dataset/vgg_features_cam7')
