@@ -1,6 +1,10 @@
 dataset/data/test_videos
 vision/vision_dataset/cnn_features
 vision/vision_dataset/extracted_frames
+vision/vision_dataset/vgg_features
+vision/models
+vision/model_checkpoints
+
 .DS_Store
 .idea
 */wandb
