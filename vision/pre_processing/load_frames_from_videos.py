@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 from tqdm.auto import tqdm, trange
-from utils import listdir_nohidden_sorted
+from utils.utility_functions import listdir_nohidden_sorted
 
 
 class FramesExtractor:

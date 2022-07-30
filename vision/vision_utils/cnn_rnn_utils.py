@@ -8,7 +8,7 @@ from sklearn.preprocessing import LabelEncoder, normalize
 from sklearn.utils.class_weight import compute_class_weight
 from tqdm.notebook import tqdm
 
-from utils import listdir_nohidden_sorted as lsdir
+from utils.utility_functions import listdir_nohidden_sorted as lsdir
 
 class DatasetLoader:
     def __init__(self, dataset_folder: str, features_folder: str, actors: list, cams: list, drop_offair: bool):

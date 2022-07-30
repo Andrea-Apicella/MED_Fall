@@ -17,3 +17,5 @@ def safe_mkdir(path) -> None:
     """If does not already exists, makes a directory in the specified path."""
     if not os.path.exists(path):
         os.makedirs(path)
+
+
