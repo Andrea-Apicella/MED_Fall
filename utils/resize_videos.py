@@ -31,7 +31,7 @@ def resize(dataset: str, dest_dataset: str, size: tuple):
                     ret, frame = cap.read()
                     if not ret:
                         break
-                    frame = cv2.resize(frame, size)
+                    frame = cv2.resize(src=frame, dsize=size, interpolation=cv2.INTER_AREA)
                     out.write(frame)
             finally:
                 cap.release()
