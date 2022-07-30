@@ -15,10 +15,10 @@ class TimeSeriesGenerator:
         self.seq_len = opt.seq_len
         self.batch_size = opt.batch_size
         self.stride = opt.stride
-        self.num_cnn_features = 2048
+        self.num_features = opt.num_features
 
     def __to_time_series(self, X: np.ndarray, y: list, cams: list, n_series: int) -> tuple[list, list]:
-        time_series: list = [np.empty(self.num_cnn_features)] * n_series
+        time_series: list = [np.empty(self.num_features)] * n_series
         y_s: list = [None] * n_series
         s: int = 0
         for w in trange(n_series):
@@ -29,7 +29,7 @@ class TimeSeriesGenerator:
             curr_cam = mode(cams_seq)
             for i, _ in enumerate(cams_seq):
                 if cams_seq[i] != curr_cam:
-                    features_seq[i] = np.zeros(self.num_cnn_features)  # padding
+                    features_seq[i] = np.zeros(self.num_features)  # padding
                     labels_seq[i] = -10  # padding
             time_series[w] = features_seq
             # convert time-step labels in one label per time-series

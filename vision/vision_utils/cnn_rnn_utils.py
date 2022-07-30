@@ -10,7 +10,6 @@ from tqdm.notebook import tqdm
 
 from utils import listdir_nohidden_sorted as lsdir
 
-
 class DatasetLoader:
     def __init__(self, dataset_folder: str, features_folder: str, actors: list, cams: list, drop_offair: bool):
         self.dataset_folder = dataset_folder
