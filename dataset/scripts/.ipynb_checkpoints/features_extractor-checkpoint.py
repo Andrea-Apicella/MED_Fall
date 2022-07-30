@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 from tqdm.auto import tqdm, trange
-from wp8.pre_processing.utils import listdir_nohidden_sorted
+from utils.utility_functions import listdir_nohidden_sorted
 
 
 projectdir = 'home/jovyan/work/MED_Fall'
@@ -35,7 +35,7 @@ class FeaturesExtractor:
 
             sheet_name = folder.replace(self.videos_folder, "").lower()[1:]
             try:
-                labels_sheet = pd.read_excel("{projectdir}/dataset/labels.xlsx",
+                labels_sheet = pd.read_excel(f"{projectdir}/dataset/labels.xlsx",
                                              sheet_name=sheet_name, index_col=0)
                 os.path.exists(
                     f"{projectdir}/vision/vision_dataset/ground_truth/{folder_name}.csv")
@@ -116,4 +116,4 @@ if __name__ == "__main__":
     preprocess_input = tf.keras.applications.vgg16.preprocess_input
     fe = FeaturesExtractor(videos_folder=videos_folder, features_extractor=features_extractor, preprocess_input=preprocess_input)
     
-    fe.extract_features(dest=f'{projectdir}/vision/vision_dataset/vgg_features_correct')
+    fe.extract_features(dest=f'{projectdir}/vision/vision_dataset/vgg_features')

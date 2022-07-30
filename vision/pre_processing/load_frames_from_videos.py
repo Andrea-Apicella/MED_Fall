@@ -79,6 +79,3 @@ class FramesExtractor:
             ground_truth = pd.concat([ground_truth, folder_ground_truth], axis=0, ignore_index=True)
             ground_truth.drop(columns=ground_truth.columns[0], axis=1, inplace=True)
         return ground_truth
-
-
-#%%
