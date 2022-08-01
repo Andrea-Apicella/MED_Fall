@@ -1,0 +1,11 @@
+<Session>
+  <SessionInformation Name="actor1_bed_full_ph" Date="2021-09-22 09:50:10" Duration="00:02:43.576" />
+  <ApplicationInformation ApplicationName="NGIMU Synchronised Network Manager" ApplicationVersion="1.18.7918.40970" ApiVersion="1.18.7918.40970" />
+  <UserInformation UserName="Giovanni" MachineName="LENOVO-P53" />
+  <Devices>
+    <Device SerialNumber="003CF1F3" DeviceName="WRIST_R" ConnectionType="Udp" DirectoryName="WRIST_R - 003CF1F3" />
+    <Device SerialNumber="003CD967" DeviceName="ANKLE_L" ConnectionType="Udp" DirectoryName="ANKLE_L - 003CD967" />
+    <Device SerialNumber="003CD993" DeviceName="ANKLE_R" ConnectionType="Udp" DirectoryName="ANKLE_R - 003CD993" />
+    <Device SerialNumber="003CE8F7" DeviceName="WRIST_L" ConnectionType="Udp" DirectoryName="WRIST_L - 003CE8F7" />
+  </Devices>
+</Session>

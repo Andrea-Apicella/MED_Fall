@@ -1,0 +1,14 @@
+<Device>
+  <DeviceInformation DeviceName="ANKLE_L" SerialNumber="003CD967" FirmwareVersion="v1.15 (Apr 26 2021 10:29:52)" BootloaderVersion="v2.0 (Mar 27 2019 15:56:10)" HardwareVersion="v1.6 (June 2021)" />
+  <ConnectionInformation ConnectionType="Udp" SendIPAddress="192.168.0.104" SendPort="9000" AdapterIPAddress="192.168.0.100" ReceivePort="8104" AdapterName="Intel(R) Wi-Fi 6 AX200 160MHz" />
+  <TimeStamps First="2021-09-22 10:06:36.569" Last="2021-09-22 10:08:10.003" TimeSpan="00:01:33.434" />
+  <FilesCreated>
+    <File Name="sensors.csv" Messages="2793" />
+    <File Name="quaternion.csv" Messages="2793" />
+    <File Name="rssi.csv" Messages="185" />
+    <File Name="temperature.csv" Messages="93" />
+    <File Name="humidity.csv" Messages="93" />
+    <File Name="battery.csv" Messages="93" />
+  </FilesCreated>
+  <Statistics BytesReceived="14627604" PacketsReceived="84664" BundlesReceived="268043" MessagesReceived="183458" ReceiveErrors="0" />
+</Device>

@@ -1,0 +1,7 @@
+<Device>
+  <DeviceInformation DeviceName="WRIST_R" SerialNumber="003CF1F3" FirmwareVersion="v1.15 (Apr 26 2021 10:29:52)" BootloaderVersion="v2.0 (Mar 27 2019 15:56:10)" HardwareVersion="v1.6 (June 2021)" />
+  <ConnectionInformation ConnectionType="Udp" SendIPAddress="192.168.0.101" SendPort="9000" AdapterIPAddress="192.168.0.100" ReceivePort="8101" AdapterName="Intel(R) Wi-Fi 6 AX200 160MHz" />
+  <TimeStamps First="1900-01-01 00:00:00.000" Last="1900-01-01 00:00:00.000" TimeSpan="00:00:00.000" />
+  <FilesCreated />
+  <Statistics BytesReceived="48878280" PacketsReceived="282819" BundlesReceived="895291" MessagesReceived="612555" ReceiveErrors="0" />
+</Device>
