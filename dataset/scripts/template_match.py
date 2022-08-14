@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from imutils.object_detection import non_max_suppression
 from tqdm import trange
+import sys
 
 from utils.utility_functions import listdir_nohidden_sorted
 
@@ -16,13 +17,12 @@ class TemplateMatch:
     def __init__(
         self,
         video_path,
-        element_type,
         templates_path,
         timestamp_roi=None,
         datalogger_roi=None,
         target_template_size=(174, 255),
-        target_timestamp_size=(2444, 428),
-        target_datalogger_size=(2444, 428),
+        target_timestamp_size = (2444, 428),
+        target_datalogger_size =(2444, 260),
     ):
         self.templates_path = templates_path
         self.templates = [cv2.imread(template) for template in listdir_nohidden_sorted(self.templates_path)]
@@ -35,22 +35,17 @@ class TemplateMatch:
         self.timestamp_roi = timestamp_roi
         self.datalogger_roi = datalogger_roi
 
-        if element_type in ["timestamp", "datalogger"]:
-            self.element_type = element_type
-        else:
-            print('Specified type of element to extract is invalid. Choose "timestamp" or "datalogger".')
-            return
-
         def total_frames(video_path):
             cap = cv2.VideoCapture(video_path)
             _, _ = cap.read()
             n_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            print("Total number of frames in the video:", n_frames)
             cap.release()
             return n_frames
 
         self.total_frames = total_frames(self.video_path)
 
-    def __pre_process_templates(self) -> None:
+    def pre_process_templates(self) -> None:
         def pre_process(template):
             template = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
             template = cv2.resize(template, self.TARGET_TEMPLATE_SIZE)
@@ -60,11 +55,9 @@ class TemplateMatch:
         self.templates = list(map(lambda template: pre_process(template), self.templates))
 
     def __select_roi(self, target):
-        n_frames = self.total_frames
-        print("Total number of frames in the video:", n_frames)
         cap = cv2.VideoCapture(self.video_path)
         _, first_frame = cap.read()
-        roi = cv2.selectROI("first_frame", first_frame)
+        roi = cv2.selectROI(str(target), first_frame)
         cap.release()
         cv2.waitKey(1)
         cv2.destroyAllWindows()
@@ -72,10 +65,13 @@ class TemplateMatch:
             cv2.waitKey(1)
         return roi
 
-    def template_match(self, frame, threshold=0.7, test=False):
+    def template_match(self, frame, element_type, threshold=0.7, test=True):
+        '''Extracts timestamp and datalogger strings from current frame'''
+
         def pre_process(frame):
             frame = cv2.bitwise_not(frame)
-            newsize = self.TARGET_TIMESTAMP_SIZE if self.element_type == "timestamp" else self.TARGET_DATALOGGER_SIZE
+            newsize = self.TARGET_TIMESTAMP_SIZE if element_type == "timestamp" else self.TARGET_DATALOGGER_SIZE
+            print('newsize', newsize)
             frame = cv2.resize(frame, dsize=newsize, interpolation=cv2.INTER_CUBIC)
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             return frame.astype(np.uint8)
@@ -96,18 +92,18 @@ class TemplateMatch:
 
             plt.figure()
             plt.title("ROI to perform Template Matching on")
-            plt.imshow(tomatch, cmap="gray")
+            plt.imshow(tomatch)
             plt.show()
 
         if len(self.templates[0].shape) > 2:
-            self.__pre_process_templates()
-        top_x, top_y, bottom_x, bottom_y = self.timestamp_roi if self.element_type == "timestamp" else self.datalogger_roi
+            self.pre_process_templates()
+        top_x, top_y, bottom_x, bottom_y = self.timestamp_roi if element_type == "timestamp" else self.datalogger_roi
         tomatch = frame[top_y : top_y + bottom_y, top_x : top_x + bottom_x]
         tomatch = pre_process(tomatch)
 
         if test:
             show(frame, tomatch, self.templates)
-            exit()
+            # sys.exit()
 
         tomatch_copy = tomatch.copy()
 
@@ -159,18 +155,31 @@ class TemplateMatch:
 
         except Exception:
             traceback.print_exc()
-            print(f"[ERROR] starts is empty! Zero bounding boxes drawn for this {self.element_type}.")
+            print(f"[ERROR] starts is empty! Zero bounding boxes drawn for this {element_type}.")
+            return
 
-    def extract_timestamps(self):
+
+
+    def extract_timestamps_dataloggers(self):
         if not self.timestamp_roi:
             self.timestamp_roi = self.__select_roi("Select Timestamp ROI")
+        if not self.datalogger_roi:
+            self.datalogger_roi = self.__select_roi("Select Datalogger ROI")
         print(f"Timestamp ROI: {self.timestamp_roi}")
+        print(f"Datalogger ROI: {self.datalogger_roi}")
 
-        timestamp_test = self.__test_single_timestamp()
+        timestamp_test, datalogger_test = self.test_single_frame()
+
         if not timestamp_test:
-            print("Can't extract timestamp from first frame.")
+            print("Can't extract TIMESTAMP from first frame.")
             return
+        if not datalogger_test:
+            print("Can't extract DATALOGGER from first frame.")
+            return
+
+
         timestamps = []
+        dataloggers = []
         cap = cv2.VideoCapture(self.video_path)
         for frame_number in (t := trange(self.total_frames)):
             # for frame_number in trange(self.total_frames):
@@ -178,20 +187,22 @@ class TemplateMatch:
             if not success:
                 print(f"Couldn't read frame {frame_number}")
                 break
-            timestamp_extracted = self.template_match(frame, test=False)
+            timestamp_extracted = self.template_match(frame, element_type="timestamp", test=True)
+            datalogger_extracted = self.template_match(frame, element_type="datalogger", test=True)
             timestamps.append(timestamp_extracted)
-            t.set_description(f"Extracted timestamp: {timestamp_extracted}")
+            dataloggers.append(datalogger_extracted)
+            t.set_description(f"Extracted timestamp: {timestamp_extracted}, Extracted datalogger {datalogger_extracted}")
         cap.release()
-        return timestamps
+        return timestamps, dataloggers
 
-    def __test_single_timestamp(self):
-        timestamp_extracted = None
+    def test_single_frame(self):
         cap = cv2.VideoCapture(self.video_path)
         _, first_frame = cap.read()
         cap.release()
 
-        timestamp_extracted = self.template_match(first_frame)
-        return timestamp_extracted
+        timestamp_extracted = self.template_match(first_frame, element_type="timestamp")
+        datalogger_extracted = self.template_match(first_frame, element_type="datalogger")
+        return timestamp_extracted, datalogger_extracted
 
 
 # def main():
