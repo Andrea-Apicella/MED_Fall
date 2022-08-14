@@ -7,7 +7,7 @@ import numpy as np
 from imutils.object_detection import non_max_suppression
 from tqdm import trange
 
-from pre_processing.utils import listdir_nohidden_sorted
+from utils.utility_functions import listdir_nohidden_sorted
 
 
 class TemplateMatch:
@@ -17,19 +17,20 @@ class TemplateMatch:
         self,
         video_path,
         element_type,
+        templates_path,
         timestamp_roi=None,
         datalogger_roi=None,
         target_template_size=(174, 255),
         target_timestamp_size=(2444, 428),
+        target_datalogger_size=(2444, 428),
     ):
-        self.templates_path = "./data/templates"
-
+        self.templates_path = templates_path
         self.templates = [cv2.imread(template) for template in listdir_nohidden_sorted(self.templates_path)]
         print(f"Found {len(self.templates)} templates in {self.templates_path}.")
 
         self.TARGET_TEMPLATE_SIZE = target_template_size
         self.TARGET_TIMESTAMP_SIZE = target_timestamp_size
-        self.TARGET_DATALOGGER_SIZE = None
+        self.TARGET_DATALOGGER_SIZE = target_datalogger_size
         self.video_path = video_path
         self.timestamp_roi = timestamp_roi
         self.datalogger_roi = datalogger_roi
@@ -63,8 +64,12 @@ class TemplateMatch:
         print("Total number of frames in the video:", n_frames)
         cap = cv2.VideoCapture(self.video_path)
         _, first_frame = cap.read()
-        roi = cv2.selectROI(f"{target}", first_frame)
+        roi = cv2.selectROI("first_frame", first_frame)
         cap.release()
+        cv2.waitKey(1)
+        cv2.destroyAllWindows()
+        for i in range (1,5):
+            cv2.waitKey(1)
         return roi
 
     def template_match(self, frame, threshold=0.7, test=False):
@@ -102,6 +107,7 @@ class TemplateMatch:
 
         if test:
             show(frame, tomatch, self.templates)
+            exit()
 
         tomatch_copy = tomatch.copy()
 
@@ -132,11 +138,11 @@ class TemplateMatch:
             if test:
                 for (startX, startY, endX, endY) in nms_boxes:
                     cv2.rectangle(tomatch_copy, (startX, startY), (endX, endY), (0, 0, 0), 3)
-            if template_number == len(self.templates) - 1:
-                plt.figure()
-                plt.imshow(tomatch_copy, cmap="gray")
-                plt.title("Bounding boxes")
-                plt.show()
+                if template_number == len(self.templates) - 1:
+                    plt.figure()
+                    plt.imshow(tomatch_copy, cmap="gray")
+                    plt.title("Bounding boxes")
+                    plt.show()
 
         x1Coords_unique = OrderedDict(sorted(x1Coords.items()))
         digits = list(x1Coords_unique.values())
@@ -172,7 +178,7 @@ class TemplateMatch:
             if not success:
                 print(f"Couldn't read frame {frame_number}")
                 break
-            timestamp_extracted = self.template_match(frame)
+            timestamp_extracted = self.template_match(frame, test=False)
             timestamps.append(timestamp_extracted)
             t.set_description(f"Extracted timestamp: {timestamp_extracted}")
         cap.release()
@@ -188,9 +194,9 @@ class TemplateMatch:
         return timestamp_extracted
 
 
-def main():
-    pass
-
-
-if __name__ == "__main__":
-    main()
+# def main():
+#     pass
+#
+#
+# if __name__ == "__main__":
+#     main()

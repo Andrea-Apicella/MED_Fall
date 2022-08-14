@@ -7,7 +7,7 @@ vision/vision_dataset/DATASET_WP8_resized
 vision/models
 vision/model_checkpoints
 
-
+*.mp4
 .DS_Store
 .idea
 */wandb
