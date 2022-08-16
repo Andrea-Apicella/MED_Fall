@@ -2,6 +2,7 @@ import traceback
 from collections import OrderedDict
 
 import cv2
+import imutils
 import matplotlib.pyplot as plt
 import numpy as np
 from imutils.object_detection import non_max_suppression
@@ -9,6 +10,39 @@ from tqdm import trange
 import sys
 
 from utils.utility_functions import listdir_nohidden_sorted
+
+
+def image_resize(image, width = None, height = None, inter = cv2.INTER_AREA):
+    # initialize the dimensions of the image to be resized and
+    # grab the image size
+    dim = None
+    (h, w) = image.shape[:2]
+
+    # if both the width and height are None, then return the
+    # original image
+    if width is None and height is None:
+        return image
+
+    # check to see if the width is None
+    if width is None:
+        # calculate the ratio of the height and construct the
+        # dimensions
+        r = height / float(h)
+        dim = (int(w * r), height)
+
+    # otherwise, the height is None
+    else:
+        # calculate the ratio of the width and construct the
+        # dimensions
+        r = width / float(w)
+        dim = (width, int(h * r))
+
+    # resize the image
+    resized = cv2.resize(image, dim, interpolation = inter)
+    # return the resized image
+    return resized
+
+
 
 
 class TemplateMatch:
@@ -20,8 +54,9 @@ class TemplateMatch:
         templates_path,
         timestamp_roi=None,
         datalogger_roi=None,
-        target_template_size=(174, 255),
-        target_timestamp_size = (2444, 428),
+        #(height, width)
+        target_template_size=(55, 88) ,
+        target_timestamp_size = (800, 200),
         target_datalogger_size =(2444, 260),
     ):
         self.templates_path = templates_path
@@ -45,9 +80,13 @@ class TemplateMatch:
 
         self.total_frames = total_frames(self.video_path)
 
+
+
     def pre_process_templates(self) -> None:
         def pre_process(template):
             template = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
+            #template = image_resize(template, height=self.TARGET_TEMPLATE_SIZE[0])
+            #template = imutils.resize(template, height=self.TARGET_TEMPLATE_SIZE[1])
             template = cv2.resize(template, self.TARGET_TEMPLATE_SIZE)
             template = cv2.bitwise_not(template)
             return template.astype(np.uint8)
@@ -65,14 +104,43 @@ class TemplateMatch:
             cv2.waitKey(1)
         return roi
 
-    def template_match(self, frame, element_type, threshold=0.7, test=True):
+    def find_rois(self, frame):
+        img = frame[:, 0:960]
+        gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        thresh_img = cv2.threshold(gray_img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+        contours, _ = cv2.findContours(thresh_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+        d = {}
+        # areas = []
+        # bounding_rects = []
+        for cnt in contours:
+
+            area = cv2.contourArea(cnt)
+            bounding_rect = cv2.boundingRect(cnt)
+            d[area] = bounding_rect
+
+        d_sorted = sorted(d, reverse=True)
+        areas = d_sorted[1:3]
+        # rois = []
+        # for i in range(len(areas)):
+        #     key = areas[i]
+        #     print(key)
+        #     # (x,y,w,h) = d[key]
+        #     print('ROI', d[key])
+        #     rois.append(d[key])
+            #cv2.rectangle(img, (x, y), (x + w, y + h), (randrange(0,255), randrange(0,255), randrange(0,255)), 2)
+        print(d[areas[0]], d[areas[1]])
+        return (d[areas[0]], d[areas[1]])
+
+    def template_match(self, frame, element_type, threshold=0.65, test=False):
         '''Extracts timestamp and datalogger strings from current frame'''
 
         def pre_process(frame):
             frame = cv2.bitwise_not(frame)
-            newsize = self.TARGET_TIMESTAMP_SIZE if element_type == "timestamp" else self.TARGET_DATALOGGER_SIZE
+            newsize = self.TARGET_TIMESTAMP_SIZE if element_type == "timestamp" else None
             print('newsize', newsize)
-            frame = cv2.resize(frame, dsize=newsize, interpolation=cv2.INTER_CUBIC)
+            if newsize is not None:
+                frame = cv2.resize(frame, dsize=newsize, interpolation=cv2.INTER_CUBIC)
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             return frame.astype(np.uint8)
 
@@ -97,8 +165,12 @@ class TemplateMatch:
 
         if len(self.templates[0].shape) > 2:
             self.pre_process_templates()
+            print(self.templates[0].shape)
         top_x, top_y, bottom_x, bottom_y = self.timestamp_roi if element_type == "timestamp" else self.datalogger_roi
-        tomatch = frame[top_y : top_y + bottom_y, top_x : top_x + bottom_x]
+        if element_type == "timestamp":
+            tomatch = frame[top_y+30 : top_y + bottom_y-30, top_x : top_x + bottom_x]
+        else:
+            tomatch = frame[top_y : top_y + bottom_y, top_x : top_x + bottom_x]
         tomatch = pre_process(tomatch)
 
         if test:
@@ -161,21 +233,28 @@ class TemplateMatch:
 
 
     def extract_timestamps_dataloggers(self):
-        if not self.timestamp_roi:
-            self.timestamp_roi = self.__select_roi("Select Timestamp ROI")
-        if not self.datalogger_roi:
-            self.datalogger_roi = self.__select_roi("Select Datalogger ROI")
-        print(f"Timestamp ROI: {self.timestamp_roi}")
-        print(f"Datalogger ROI: {self.datalogger_roi}")
+        # if not self.timestamp_roi:
+        #     self.timestamp_roi = self.__select_roi("Select Timestamp ROI")
+        # if not self.datalogger_roi:
+        #     self.datalogger_roi = self.__select_roi("Select Datalogger ROI")
+        # print(f"Timestamp ROI: {self.timestamp_roi}")
+        # print(f"Datalogger ROI: {self.datalogger_roi}")
 
-        timestamp_test, datalogger_test = self.test_single_frame()
+        cap = cv2.VideoCapture(self.video_path)
+        _, first_frame = cap.read()
+        cap.release()
 
-        if not timestamp_test:
-            print("Can't extract TIMESTAMP from first frame.")
-            return
-        if not datalogger_test:
-            print("Can't extract DATALOGGER from first frame.")
-            return
+
+        self.timestamp_roi, self.datalogger_roi = self.find_rois(first_frame)
+
+        # timestamp_test, datalogger_test = self.test_single_frame()
+        #
+        # if not timestamp_test:
+        #     print("Can't extract TIMESTAMP from first frame.")
+        #     return
+        # if not datalogger_test:
+        #     print("Can't extract DATALOGGER from first frame.")
+        #     return
 
 
         timestamps = []
@@ -187,8 +266,8 @@ class TemplateMatch:
             if not success:
                 print(f"Couldn't read frame {frame_number}")
                 break
-            timestamp_extracted = self.template_match(frame, element_type="timestamp", test=True)
-            datalogger_extracted = self.template_match(frame, element_type="datalogger", test=True)
+            timestamp_extracted = self.template_match(frame, element_type="timestamp", test=False)
+            datalogger_extracted = self.template_match(frame, element_type="datalogger", test=False)
             timestamps.append(timestamp_extracted)
             dataloggers.append(datalogger_extracted)
             t.set_description(f"Extracted timestamp: {timestamp_extracted}, Extracted datalogger {datalogger_extracted}")
