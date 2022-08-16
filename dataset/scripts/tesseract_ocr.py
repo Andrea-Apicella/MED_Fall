@@ -1,12 +1,12 @@
-import argparse
+import re
 
 import cv2
-import pytesseract
 import numpy as np
-import re
+import pytesseract
 from tqdm.auto import trange
+
 from utils.utility_functions import safe_mkdir
-import sys
+
 
 class TesseractOCR:
     def __init__(self, video_path: str):
@@ -32,13 +32,13 @@ class TesseractOCR:
 
         text = re.sub('\D', '', text)
         if len(text) != 9:
-            print(f"Faulty extraction at frame {n+1}. Text extracted: {text}")
+            print(f"Faulty extraction at frame {n + 1}. Text extracted: {text}")
             ind = self.video_path.rfind('/') + 1
             video_name = self.video_path[ind:-4]
 
             faulty_frames_path = '/Users/andrea/Documents/Github/MED_Fall/dataset/data/faulty_frames'
             safe_mkdir(faulty_frames_path)
-            frame_name = f"frame_{n+1}--video_{video_name}.jpg".replace(" ", "_")
+            frame_name = f"frame_{n + 1}--video_{video_name}.jpg".replace(" ", "_")
             cv2.imwrite(f"{faulty_frames_path}/{frame_name}", image)
 
         text = f"{text[0:2]}:{text[2:4]}:{text[4:6]}.{text[6:]}"
@@ -70,7 +70,6 @@ class TesseractOCR:
         top_x, top_y, bottom_x, bottom_y = datalogger_roi
         datalogger_image_region = frame[top_y: top_y + bottom_y, top_x: top_x + bottom_x]
 
-        if timestamp_roi
         ##add check to stop if detected roi changes
 
         return timestamp_image_region, datalogger_image_region
@@ -101,5 +100,5 @@ class TesseractOCR:
             timestamps[n] = self.__strip_unwanted_chars_validate_format(timestamp_text, n, timestamp_img)
             dataloggers[n] = self.__strip_unwanted_chars_validate_format(datalogger_text, n, datalogger_img)
 
-            t.set_description(f"Frame {n+1}. Timestamp: {timestamps[n]}, Datalogger: {dataloggers[n]}")
+            t.set_description(f"Frame {n + 1}. Timestamp: {timestamps[n]}, Datalogger: {dataloggers[n]}")
         return timestamps, dataloggers
