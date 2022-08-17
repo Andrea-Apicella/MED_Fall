@@ -26,7 +26,7 @@ class FramesExtractor:
 
         ground_truth = pd.DataFrame()
         for _, folder in enumerate(t0 := tqdm(self.videos_paths[:self.available_sequences])):
-            folder_name = folder.replace(self.videos_folder, "")[1:]
+            folder_name = folder.replace(self.videos_folder, "")
             t0.set_description(f"Processing folder: {folder_name}")
 
             sheet_name = folder.replace(self.videos_folder, "").lower()[1:]
@@ -42,7 +42,7 @@ class FramesExtractor:
                 print(f"Folder already processed. Skippig {folder_name}")
                 continue
 
-            videos_path = f"{folder}/videos"
+            videos_path = f"{folder}"
 
             folder_ground_truth = pd.read_csv(f"{self.ground_truth_folder}/{folder_name}.csv")
 
@@ -72,13 +72,13 @@ class FramesExtractor:
 
 if __name__ == "__main__":
     
-    projectdir = "/home/jovyan/work/MED_Fall/"
+    projectdir = "/home/jovyan/work/MED_Fall"
     
     fe = FramesExtractor(
-        videos_folder       = f"{projectdir}/vision/vision_dataset/DATASET_WP8_resized/",
-        output_folder       = f"{projectdir}/vision/vision_dataset/extracted_frames/",
+        videos_folder       = f"{projectdir}/vision/vision_dataset/DATASET_WP8_resized",
+        output_folder       = f"{projectdir}/vision/vision_dataset/extracted_frames",
         labels              = f"{projectdir}/dataset/labels.xlsx",
-        ground_truth_folder = f"{projectdir}/vision/vision_dataset/ground_truth/",
+        ground_truth_folder = f"{projectdir}/vision/vision_dataset/ground_truth",
     )
     
     fe.extract_frames()
