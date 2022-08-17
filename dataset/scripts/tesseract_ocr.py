@@ -9,6 +9,7 @@ from utils.utility_functions import safe_mkdir
 
 
 class TesseractOCR:
+    """Extracts timestamps and datalogger times from each program video frame using pytesseract OCR library"""
     def __init__(self, video_path: str):
         self.video_path = video_path
 
