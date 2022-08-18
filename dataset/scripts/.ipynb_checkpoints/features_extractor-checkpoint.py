@@ -28,7 +28,7 @@ class FeaturesExtractor:
         
         safe_mkdir(dest)
         all_features = []
-        for _, folder in enumerate((t0 := tqdm(self.videos_paths, position=0))):
+        for _, folder in enumerate((t0 := tqdm(self.videos_paths, position=0, leave=False))):
             folder_name = folder.replace(self.videos_folder, "")[1:]
             t0.set_description(
                 f'Processing folder: {folder_name}')
@@ -58,7 +58,7 @@ class FeaturesExtractor:
             video_iso_files = listdir_nohidden_sorted(
                 video_iso_files_path)
 
-            for _, cam in enumerate((t1 := tqdm(video_iso_files, position=1, leave=False))):
+            for _, cam in enumerate((t1 := tqdm(video_iso_files, leave=False))):
                 start = cam.rfind('/') + 1
                 end = len(cam) - 4
                 t1.set_description(
