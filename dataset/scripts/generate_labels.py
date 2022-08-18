@@ -4,16 +4,21 @@ import os
 import pandas as pd
 from openpyxl import Workbook
 from tqdm import tqdm
-from wp8.pre_processing.utils import listdir_nohidden_sorted
+from utils.utility_functions import listdir_nohidden_sorted
 
 
 class LabelsGenerator:
     """Generate labels from JSON files containing class ranges manually annotated in Supervisely"""
 
-    def __init__(self, json_dir):
+    def __init__(
+        self,
+        json_dir,
+        output_dir,
+    ):
         self.json_dir = json_dir
-        self.json_files_paths = listdir_nohidden_sorted(self.json_dir)
+        self.json_files_paths = listdir_nohidden_sorted(self.json_dir)[:50]
         self.labels_dict = None
+        self.output_dir = output_dir
 
         print(f"[INFO] Found {len(self.json_files_paths)} JSON files")
 
@@ -32,14 +37,12 @@ class LabelsGenerator:
             # check that frameRanges are subsequent
             for i, tag in enumerate(tags[:-1]):
                 curr_end = tags[i]["frameRange"][1]
-                next_start = tags[i+1]["frameRange"][0]
+                next_start = tags[i + 1]["frameRange"][0]
                 if next_start - curr_end != 1:
-                    non_consecutive.append(
-                        [tags[i]["frameRange"], tags[i+1]["frameRange"]])
+                    non_consecutive.append([tags[i]["frameRange"], tags[i + 1]["frameRange"]])
 
             if len(non_consecutive) > 0:
-                raise Exception(
-                    f'[ERROR] In file {self.labels_dict["videoName"]} the following frameRanges are not consecutive:\n{non_consecutive}')
+                raise Exception(f'[ERROR] In file {self.labels_dict["videoName"]} the following frameRanges are not consecutive:\n{non_consecutive}')
 
         with open(file) as json_file:
             self.labels_dict = json.load(json_file)
@@ -56,12 +59,9 @@ class LabelsGenerator:
         #             tags.pop(j)
 
         # filter out objects where label is "actor_repositioning"
-        tags_no_ar = list(
-            filter(lambda tag: tag["name"] != "actor_repositioning", tags)
-        )
+        tags_no_ar = list(filter(lambda tag: tag["name"] != "actor_repositioning", tags))
         # filter out objects where label is NOT "actor_repositioning"
-        tags_ar = list(
-            filter(lambda tag: tag["name"] == "actor_repositioning", tags))
+        tags_ar = list(filter(lambda tag: tag["name"] == "actor_repositioning", tags))
 
         # sort tags based on the frame ranges. Necessary as Supervisely messes up the order of the tags sometimes
         tags_no_ar.sort(key=lambda tag: tag["frameRange"][0])
@@ -90,21 +90,44 @@ class LabelsGenerator:
         # replacing "on_air" label with "actor_repositioning" where is needed
         for tag in tags_ar:
             frames_range = tag["frameRange"]
-            ar_labels[frames_range[0]: frames_range[1] + 1] = interval_to_list(
-                frames_range, "actor_repositioning"
-            )
+            ar_labels[frames_range[0] : frames_range[1] + 1] = interval_to_list(frames_range, "actor_repositioning")
 
-        micro_classes = ["lie_still", "sit_up_from_lying", "stand_still", "lie_down_from_sitting", "sit_down_from_standing", "fall_lateral", "lie_down_on_the_floor",
-                         "stand_up_from_floor", "fall_crouch", "crouched_still", "rolling_bed", "fall_rolling", "sit_still", "stand_up_from_sit", "fall_frontal", "walking", "pick_up_object"]
+        micro_classes = [
+            "lie_still",
+            "sit_up_from_lying",
+            "stand_still",
+            "lie_down_from_sitting",
+            "sit_down_from_standing",
+            "fall_lateral",
+            "lie_down_on_the_floor",
+            "stand_up_from_floor",
+            "fall_crouch",
+            "crouched_still",
+            "rolling_bed",
+            "fall_rolling",
+            "sit_still",
+            "stand_up_from_sit",
+            "fall_frontal",
+            "walking",
+            "pick_up_object",
+        ]
 
-        micro_classes_adl = ["sit_up_from_lying", "stand_still", "lie_down_from_sitting",
-                             "sit_down_from_standing", "stand_up_from_floor", "rolling_bed", "sit_still", "stand_up_from_sit", "walking", "pick_up_object"]
+        micro_classes_adl = [
+            "sit_up_from_lying",
+            "stand_still",
+            "lie_down_from_sitting",
+            "sit_down_from_standing",
+            "stand_up_from_floor",
+            "rolling_bed",
+            "sit_still",
+            "stand_up_from_sit",
+            "walking",
+            "pick_up_object",
+        ]
 
-        micro_classes_lying = ["lie_still",
-                               "lie_down_on_the_floor", "crouched_still"]
+        micro_classes_lying = ["lie_still", "lie_down_on_the_floor"]
 
-        micro_classes_fall = ["fall_frontal",
-                              "fall_lateral", "fall_crouch", "fall_rolling"]
+        micro_classes_fall = ["fall_frontal", "fall_lateral", "fall_crouch", "fall_rolling", "crouched_still"]
 
         macro_classes = ["adl", "falling", "lying_down"]
 
@@ -117,8 +140,7 @@ class LabelsGenerator:
             elif micro_labels[i] in micro_classes_lying:
                 macro_labels[i] = macro_classes[2]
             else:
-                raise Exception(
-                    f"{micro_labels[i]} does not have a corresponding macro label.")
+                raise Exception(f"{micro_labels[i]} does not have a corresponding macro label.")
         if "temp" in macro_labels:
             raise Exception("macro_labels creation failed")
 
@@ -126,14 +148,13 @@ class LabelsGenerator:
         ar_labels = pd.Series(ar_labels)
         macro_labels = pd.Series(macro_labels)
 
-        d = {"micro_labels": micro_labels,
-             "macro_labels": macro_labels, "ar_labels": ar_labels}
+        d = {"micro_labels": micro_labels, "macro_labels": macro_labels, "ar_labels": ar_labels}
         labels = pd.DataFrame(data=d)
 
         sheet_name = self.labels_dict["videoName"].replace(".mp4", "").lower()
 
         with pd.ExcelWriter(
-            "/Users/andrea/Documents/Github/WP8_refactoring/wp8/outputs/labels/labels.xlsx",
+            f"{self.output_dir}/labels.xlsx",
             engine="openpyxl",
             mode="a",
             if_sheet_exists="replace",
@@ -142,13 +163,14 @@ class LabelsGenerator:
 
     def generate_labels(self):
         """Generate labels excel file from multiple JSON files in the specified folder"""
-        filename = "../outputs/labels/labels.xlsx"
+        filename = f"{self.output_dir}/labels.xlsx"
         if not os.path.isfile(filename):
             wb = Workbook()
             wb.save(filename=filename)
 
         for _, file in enumerate(tqdm(self.json_files_paths)):
             self.gen_labels_single_file(file)
+
 
 # def test():
 #     lg = LabelsGenerator(json_dir="wp8/data/labels_json/")
@@ -158,6 +180,6 @@ class LabelsGenerator:
 #     # lg.generate_macro_labels()
 
 
-# if __name__ == "__main__":
-#     # test()
-#     pass
+if __name__ == "__main__":
+    lg = LabelsGenerator(json_dir="../data/labels_json", output_dir="../")
+    lg.generate_labels()
