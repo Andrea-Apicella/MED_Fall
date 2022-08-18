@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 from tqdm.auto import tqdm, trange
-from utils.utility_functions import listdir_nohidden_sorted
+from utils.utility_functions import listdir_nohidden_sorted, safe_mkdir
 
 
 projectdir = 'home/jovyan/work/MED_Fall'
@@ -25,8 +25,8 @@ class FeaturesExtractor:
         return self.features_extractor.predict(np.expand_dims(frame, axis=0))
 
     def extract_features(self, dest):
-
-        dfs = []
+        
+        safe_mkdir(dest)
         all_features = []
         for _, folder in enumerate((t0 := tqdm(self.videos_paths, position=0))):
             folder_name = folder.replace(self.videos_folder, "")[1:]
@@ -50,7 +50,7 @@ class FeaturesExtractor:
                     #f'Folder already processed. Skippig {folder_name}')
                 #continue
 
-            video_iso_files_path = f'{folder}/videos'
+            video_iso_files_path = f'{folder}'
 
             frames_names = []
             folder_features = []
@@ -58,7 +58,7 @@ class FeaturesExtractor:
             video_iso_files = listdir_nohidden_sorted(
                 video_iso_files_path)
 
-            for _, cam in enumerate((t1 := tqdm(video_iso_files, position=1, leave=True))):
+            for _, cam in enumerate((t1 := tqdm(video_iso_files, position=1, leave=False))):
                 start = cam.rfind('/') + 1
                 end = len(cam) - 4
                 t1.set_description(
@@ -74,45 +74,27 @@ class FeaturesExtractor:
                         features = self.predict_frame(frame)
                         folder_features.append(features)
 
-                        file_name = f'{cam[start:end].lower().replace(" ", "_")}_{str(f).zfill(4)}'
+                        file_name = f'{cam[start:end].lower().replace(" ","_")}_{str(f).zfill(4)}'
                         frames_names.append(file_name)
 
                 finally:
                     cap.release()
 
-            df = pd.concat(
-                [labels_sheet] * len(video_iso_files), ignore_index=True)  # type: ignore
-
-            df["frame_name"] = pd.Series(frames_names)
-
+            
             # save compressed features as npz files
             folder_features = np.asarray(folder_features).squeeze()
             np.savez_compressed(
                 f"{dest}/{folder_name}", folder_features)
 
             print(f"folder_features shape: {folder_features.shape}")
-
-            # save dataset as csv
-            #df.to_csv(f"outputs/dataset/dataset/{folder_name}.csv")
-
-            #all_features.append(folder_features)
-            #dfs.append(df)
-
-        # savez_compressed all features as npy
-        #all_features = np.asarray(all_features).squeeze()
-        #np.savez_compressed(
-            #f"{dest}", all_features)
-
-        # savez_compressed full dataset as csv
-        #dataset = pd.concat(dfs)
-        #dataset.to_csv("outputs/dataset/dataset/full_dataset.csv")
         
         
 if __name__ == "__main__":
-    projectdir = 'home/jovyan/work/MED_Fall'
+    projectdir = '/home/jovyan/work/MED_Fall'
     
-    videos_folder = 'home/jovyan/work/persistent/DATASET_WP8'
-    features_extractor = f'{projectdir}/vision/models/vgg_features_extractor.h5'
+    videos_folder = f'{projectdir}/vision/vision_dataset/DATASET_WP8_resized'
+    features_extractor_path = f'{projectdir}/vision/models/vgg_feature_extractor.h5'
+    features_extractor = tf.keras.models.load_model(features_extractor_path)
     preprocess_input = tf.keras.applications.vgg16.preprocess_input
     fe = FeaturesExtractor(videos_folder=videos_folder, features_extractor=features_extractor, preprocess_input=preprocess_input)
     
