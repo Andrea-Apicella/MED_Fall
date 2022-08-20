@@ -10,7 +10,7 @@ frames_folder =  "/home/jovyan/work/MED_Fall/vision/vision_dataset/extracted_fra
 
 def get_video_seq(batch):
     
-    frames_tensor = load_images(frames_folder, batch)
+    frames_tensor = load_images(frames_folder, batch, extension='jpg')
     return frames_tensor
     
 

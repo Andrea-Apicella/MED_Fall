@@ -3,14 +3,13 @@ from statistics import mode
 
 import numpy as np
 from tensorflow.keras.utils import Sequence
-from sklearn import preprocessing.LabelEncoder 
+from sklearn.preprocessing import LabelEncoder 
 from utils.utility_functions import load_images
 
 
 class VideoSeqGenerator(Sequence):
-    def __init__(self, X: pd.Series, y: pd.Series, seq_len: int, stride: int, batch_size: int, frames_folder: str):
-        self.X = X.tolist()
-        self.y = y.tolist()
+    def __init__(self, df: pd.DataFrame, seq_len: int, stride: int, batch_size: int, frames_folder: str):
+        self.df = df
         self.seq_len = seq_len
         self.stride = stride
         self.batch_size = batch_size
@@ -34,8 +33,9 @@ class VideoSeqGenerator(Sequence):
         # generate one time series of seq_len padded if its too short
         # check that the time series is from the one cam only (does not overflow on another camera)
         
-        X = load_images(frames_folder, batch["frames"])
-        labels = batch["labels"]
+        #X = load_images(self.frames_folder, batch["frames"])
+        
+        frames_labels = batch["labels"]
         
         le = LabelsEncoder()
         le.fit(labels)
@@ -43,19 +43,27 @@ class VideoSeqGenerator(Sequence):
         self.class_indices = dict(zip(le.classes_, le.transform(le.classes_)))
         self.classes = le.transform(labels)
         
-        y = self.classes
+        frames_labels_encoded = self.classes
         
-        #frames_series contains batch_size series of frames. Each series is a np.array of 20 frames.
-        frames_series = np.empty(self.batch_size)
+        #frames_series contains batch_size series of frames. Each series is a np.array of seq_len frames.
         
+        frames_seq = np.empty(self.batch_size)
+        cams_seq = np.empty_like(frames_seq)
         s = 0
-        for i in range(0, self.batch_size):
-            s = i * self.seq_len
-            frames_series[i] = load_images(frames_folder, batch["frames"][s:s+seq_len])
+        for i in range(0, self.batch_size * self.seq_len, self.seq_len):
+            frames_seq[i] = load_images(frames_folder, batch["frame_name"][i:i+seq_len])
+            cams_seq[i] = df["cam"].tolist()
             
+            curr_cam = mode(cams_seq)
+            if cams_seq[i] != curr_cam
             for c in range(len(cams_seq))
         
-
+            
+            
+            
+            
+            
+            
         time_series = [np.empty(self.num_features)] 
         y_s = [None] * self.n_windows
         s = 0
@@ -85,8 +93,8 @@ class VideoSeqGenerator(Sequence):
         a = index * self.batch_size * self.seq_len
         b = (index + 1) * self.batch_size * self.seq_len
 
-        batch = {"frames": self.X[a:b], "labels": self.y[a:b]}
-        X, y = self.__get_data(batch)
+        batch = {"frames": self.df["frame_name"][a:b], "labels": self.df[a:b], "cams": self.df["cam"]}
+        X, y = self.__get_video_seq(batch)
         return X, y
 
     def __on_epoch_end(self):
