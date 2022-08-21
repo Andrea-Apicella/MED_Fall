@@ -2,100 +2,100 @@
 from statistics import mode
 
 import numpy as np
+import pandas as pd
 from tensorflow.keras.utils import Sequence
 from sklearn.preprocessing import LabelEncoder 
-from utils.utility_functions import load_images
+from utils.utility_functions import load_images, listdir_nohidden_sorted as lsdir
 
 
 class VideoSeqGenerator(Sequence):
-    def __init__(self, df: pd.DataFrame, seq_len: int, stride: int, batch_size: int, frames_folder: str):
-        self.df = df
-        self.seq_len = seq_len
-        self.stride = stride
-        self.batch_size = batch_size
-        self.frames_folder = frames_folder
+    def __init__(self, df: pd.DataFrame, seq_len: int, batch_size: int, frames_path: str, input_shape: tuple[int, int, int] = (224, 224, 3)):
+        self.df = df,
+        self.df = self.df[0]
+        self.frames_path: str = frames_path,
+        self.seq_len: int = seq_len,
+        self.batch_size: int = batch_size,
+        self.input_shape: tuple = input_shape,
         
-        self.n = len(self.X)
-        self.count = 1
-        self.len = len(self.X)
-        self.evaluate = evaluate
-        self.n_windows = (self.batch_size - self.seq_len) // self.stride + 1
-        self.n_series_labels = self.n_windows * (len(self.y) // self.batch_size)
-        self.n_batches = len(self.y) // self.batch_size
-        self.series_labels = []
-        self.ys_count = 0
-        self.get_item_calls = 0
-
+    def __get_cam(self, name: str) -> int
+        start = name.find("cam_")
+        ind = start + 4
+        cam_number = name[ind]
+        return int(cam_number)
+    
     def __len__(self):
-        return self.X.shape[0] // (self.batch_size)
+        print(type(self.batch_size), type(self.seq_len))
+        length: int = self.df.shape[0] // (self.batch_size * self.seq_len)
+        return length
+    
+    
+    def get_video_seq(self, df) -> tuple[np.array, np.array]:
+        frames: list = df["frame_name"].tolist()
 
-    def __get_video_seq(self, batch):
-        # generate one time series of seq_len padded if its too short
-        # check that the time series is from the one cam only (does not overflow on another camera)
-        
-        #X = load_images(self.frames_folder, batch["frames"])
-        
-        frames_labels = batch["labels"]
-        
-        le = LabelsEncoder()
-        le.fit(labels)
-        
-        self.class_indices = dict(zip(le.classes_, le.transform(le.classes_)))
-        self.classes = le.transform(labels)
-        
-        frames_labels_encoded = self.classes
-        
-        #frames_series contains batch_size series of frames. Each series is a np.array of seq_len frames.
-        
-        frames_seq = np.empty(self.batch_size)
-        cams_seq = np.empty_like(frames_seq)
-        s = 0
-        for i in range(0, self.batch_size * self.seq_len, self.seq_len):
-            frames_seq[i] = load_images(frames_folder, batch["frame_name"][i:i+seq_len])
-            cams_seq[i] = df["cam"].tolist()
-            
-            curr_cam = mode(cams_seq)
-            if cams_seq[i] != curr_cam
-            for c in range(len(cams_seq))
-        
-            
-            
-            
-            
-            
-            
-        time_series = [np.empty(self.num_features)] 
-        y_s = [None] * self.n_windows
-        s = 0
-        for w in range(0, self.n_windows):
-            s = w * self.stride
-            features_seq = X[s : s + self.seq_len, :]
-            labels_seq = y[s : s + self.seq_len]
-            cams_seq = cams[s : s + self.seq_len]
-            curr_cam = mode(cams_seq)
-            for i, _ in enumerate(cams_seq):
-                if cams_seq[i] != curr_cam:
-                    features_seq[i] = np.zeros(self.num_features)  # padding
-                    labels_seq[i] = -10  # padding
-            time_series[w] = features_seq
-            # convert time-step labels in one label per time-series
-            labels_seq = [l for l in labels_seq if l != -10]
-            label = mode(labels_seq)  # label with most occurrence
-            y_s[w] = label
+        # add cam column to dataframe
+        cams: list = [get_cam(cam) for cam in frames]
 
-        if not self.evaluate:
-            self.series_labels.extend(y_s)
-            self.ys_count += len(y_s)
-        return np.array(time_series), self.labels_encoder.fit_transform(y_s)
+        labels: list = df["macro_labels"].tolist()
+        le = LabelEncoder()
+        labels_encoded: list = le.fit_transform(labels).tolist()
 
-    def __getitem__(self, index):
-        self.get_item_calls += 1
-        a = index * self.batch_size * self.seq_len
-        b = (index + 1) * self.batch_size * self.seq_len
+        X = []
+        y = []
+        for i in range(0, self.batch_size):
+            s: int = i * seq_len
+            frames_seq: list = frames[s: s + seq_len]  # select seq_len frame_names
+            labels_seq: list = labels_encoded[s: s + seq_len]  # select seq_len labels
+            cams_seq: list = cams[s: s + seq_len]  # select seq_len cams
 
-        batch = {"frames": self.df["frame_name"][a:b], "labels": self.df[a:b], "cams": self.df["cam"]}
-        X, y = self.__get_video_seq(batch)
+            # check that cam is
+            sequence_cam = mode(cams_seq)
+
+            for j in range(len(labels_seq)):
+                curr_cam = cams[i]
+                if curr_cam != sequence_cam:
+                    labels_seq[j] = -10
+                    frames_seq[j] = -10
+
+            labels_seq = [label for label in labels_seq if not label == -10]
+            frames_seq = [frame for frame in frames_seq if not frame == -10]
+
+            sequence_label = mode(labels_seq)
+
+            images = load_images(self.frames_path, frames_seq, extension="jpg")
+
+            n_seq_frames = np.uint8(seq_len)
+            n_actual_frames = np.uint8(images.shape[0])
+
+            n_missing: np.uint8 = n_seq_frames - n_actual_frames
+
+            if n_missing:
+                to_add_shape = (n_missing,) + input_shape
+                to_add = np.zeros(shape=to_add_shape, dtype=np.uint8)
+                images = np.concatenate((images, to_add), axis=0)
+
+
+            X.append(images)
+            y.append(sequence_label)
+
+        X = np.array(X, dtype=np.uint8)
+        y = np.array(y, dtype=np.uint8)
+
         return X, y
 
+
+    def __get_item__(self, index):
+        start: int = index * self.batch_size * self.seq_len
+        end: int = (index + 1) * self.batch_size * self.seq_len
+        
+        X, y = self.get_video_seq(pd.DataFrame(self.df.iloc[start:end, :]))
+                                  
+        return X, y
+                                  
     def __on_epoch_end(self):
         pass
+        
+        
+        
+        
+        
+      
