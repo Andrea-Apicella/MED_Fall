@@ -5,7 +5,8 @@ from natsort import natsorted
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.image import imread
-
+import cv2
+import sys
 
 def listdir_nohidden_sorted(path) -> list:
     """Returns a list of the elements in the specified path, sorted by name. Skips dotfiles."""
@@ -25,7 +26,7 @@ def safe_mkdir(path) -> bool:
         return False
     
     
-def load_images(images_dir: str, images_names: list, extension = None) -> np.array:
+def load_images(images_dir: str, images_names: list, resize_shape: tuple[int,int], extension = None) -> np.array:
     """Loads images as numpy array. 
     
     Parameters
@@ -35,11 +36,29 @@ def load_images(images_dir: str, images_names: list, extension = None) -> np.arr
     images_names: list containing the titles of the images.
     
     """
+
+    
     if extension is None:
-        images = np.array([imread(f"{images_dir}/{name}") for name in images_names])
+        images_names = listdir_nohidden_sorted(images_dir)
+        
+        images = []
+        for name in images_names:
+            print(name)
+            sys.exit()
+            image = cv2.imread(f"{images_dir}/{name}")
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            image = cv2.resize(image, resize_shape)
+            images.append(image)
+        images = np.array(images)
     else: 
-        images = np.array([imread(f"{images_dir}/{name}.{extension}") for name in images_names])
-    print(images.shape)
+        images = []
+        for name in images_names:
+            image = cv2.imread(f"{images_dir}/{name}.{extension}")
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            image = cv2.resize(image, resize_shape)
+            image = image.astype(float) / 255
+            images.append(image)
+        images = np.array(images)
     return images
     
 def show_images(images, rows=3, titles=None, figsize=(15, 10)):
