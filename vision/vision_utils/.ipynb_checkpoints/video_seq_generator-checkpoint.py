@@ -29,8 +29,13 @@ class VideoSeqGenerator(Sequence):
         for name in self.df["frame_name"]:
             cam = self.__get_cam(name)
             cams.append(cam)
-        
         self.df["cam"] = cams
+        
+        actor_sequences = []
+        for name in self.df["frame_name"]:
+            actor_seq = self.__get_actor_seq(name)
+            actor_sequences.append(actor_seq)
+        self.df["actor_seq"] = actor_sequences
 
         
     def __get_cam(self, name: str) -> int:
@@ -39,6 +44,14 @@ class VideoSeqGenerator(Sequence):
         cam_number = name[ind]
         return int(cam_number)
     
+    def __get_actor_seq(self, name: str) -> str:
+        'Actor_1_bed_cam_1_0000'
+        start = name.rfind("actor_") + 6
+        end = name.rfind("_cam")
+        
+        actor_seq = name[start:end]
+        return actor_seq
+        
 
     
     def __len__(self):
@@ -63,13 +76,13 @@ class VideoSeqGenerator(Sequence):
             image = cv2.imread(f"{images_dir}/{name}")
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             image = cv2.resize(image, resize_shape)
-            image = image.astype(float) / 255
+            #image = image.astype(float) / 255
             return image
         else: 
             image = cv2.imread(f"{images_dir}/{name}.{extension}")
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             image = cv2.resize(image, resize_shape)
-            image = image.astype(float) / 255
+            #image = image.astype(float) / 255
             return image
 
 
@@ -85,6 +98,7 @@ class VideoSeqGenerator(Sequence):
 
         labels: list = df["macro_labels"].tolist()
         cams: list = df["cam"].tolist()
+        actors = df["actor_seq"].tolist()
         
 
         X = []
@@ -95,48 +109,56 @@ class VideoSeqGenerator(Sequence):
             frames_seq: list = frames[s: s + self.seq_len]  # select seq_len frame_names
             labels_seq: list = labels[s: s + self.seq_len]  # select seq_len labels
             cams_seq: list = cams[s: s + self.seq_len]  # select seq_len cams
-
-            # check that cam is
+            actors_seq: list = actors[s: s + self.seq_len]
+            
+            
+            sequence_label = mode(labels_seq)
             sequence_cam = mode(cams_seq)
-
-            for j in range(len(cams_seq)):
-                #print("sequence_cam: ", sequence_cam)
-                curr_cam = cams_seq[j]
-                #print("curr_cam: ", curr_cam)
-
-                if curr_cam != sequence_cam:
-                    labels_seq[j] = None
-                    frames_seq[j] = None
+            sequence_actor_seq = mode(actors_seq)
             
             l = []
+
+            for j in range(self.seq_len):
+                curr_cam = cams_seq[j]
+                curr_actor = actors_seq[j]
+                curr_label = labels_seq[j]
+
+                if curr_label != sequence_label or curr_cam != sequence_cam or curr_actor != sequence_actor_seq:
+                    labels_seq[j] = None
+                    frames_seq[j] = None
+                else: 
+                    l.append(labels_seq[j])
+            
+            labels_seq = l
+                    
+            
+
             #f = []
-            for label in labels_seq:
-                  if label is not None:
-                      l.append(label)
+            #for label in labels_seq:
+                  #if label is not None:
+                      #l.append(label)
             #for frame in frames_seq:
                   #if frame is not None:
                       #f.append(frame)
                   
-            labels_seq = l
+
             #frames_seq = f
             
-            if len(labels_seq) == 0:
-                #print("cams_seq: ", cams_seq)
-                #print("frames_seq: ", frames_seq)
-                #print("l: ", l)
-                sys.exit()
-            sequence_label = mode(labels_seq)
+            assert len(labels_seq) > 0
+                
+            sequence_label = mode(l)
             sequence_label = self.label_encoder.transform([sequence_label]).tolist()[0]
             
             
             images = []
             for name in frames_seq:
                 if name == None:
-                    pad_image = np.zeros(shape=self.input_shape)
+                    pad_image = np.zeros(shape=self.input_shape, dtype=np.uint8)
                     images.append(pad_image)
                 else:
                     loaded_image = self.__load_image(self.frames_path, name, extension="jpg", resize_shape=self.input_shape[:2])
                     images.append(loaded_image)
+
             
             
             #images = load_images(self.frames_path, frames_seq, extension="jpg", resize_shape=self.input_shape[:2])
@@ -162,6 +184,7 @@ class VideoSeqGenerator(Sequence):
 
         return X, y
     
+     
     
     
     def test(self):
