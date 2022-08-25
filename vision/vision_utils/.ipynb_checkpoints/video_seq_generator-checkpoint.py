@@ -148,7 +148,7 @@ class VideoSeqGenerator(Sequence):
             
             for j in range(self.seq_len):   # iterate over the current window
                 curr_cam = cams_seq[j]      # select the j-th cam number in the window
-                curr_actor = actors_seq[j]  # select the j-th actor sequence in the window
+                curr_actor = actors_seq[j] # select the j-th actor sequence in the window
                 curr_label = labels_seq[j]  # select the j-th label in the window
                 
                 # if the j-th frame has a different label, or cam number, or actor sequence respect to the corresponding modes of the window
@@ -186,7 +186,7 @@ class VideoSeqGenerator(Sequence):
             X.append(images)         # append the i-th window of frames to X
             y.append(sequence_label) # append the i-th window's label to y
 
-        # convert X and y to numpy arrays
+        #convert X and y to numpy arrays
         X = np.array(X, dtype=np.uint8) 
         y = np.array(y, dtype=np.uint8)
 

@@ -50,55 +50,55 @@ class DatasetLoader:
             indices = [] # empty list that will store the indices of the actors to NOT load
             
             for i, filename in enumerate(datasets_paths): # for each csv file name
-                if int(filename[filename.find("Actor_") + 6]) not in self.actors: # if the actor number in the file name is not in self.actors
+                if int(filename[filename.find("Actor_") + 6]) not in self.actors: #if the actor number in the file name is not in self.actors
                     indices.append(i) # append to indices the index to remove
 
-            for index in sorted(indices, reverse=True): # sort descending the indices so that while removing the elements in the list we don't skip any.
-                del datasets_paths[index] # delete the name of the csv file at the current index in indices.
-                del features_paths[index] # delete the name of the npz features file at the curre index in indices.
+            for index in sorted(indices, reverse=True): #sort descending the indices so that while removing the elements in the list we don't skip any.
+                del datasets_paths[index] #delete the name of the csv file at the current index in indices.
+                del features_paths[index] #delete the name of the npz features file at the curre index in indices.
 
         # load features
-        all_features = [] # empty list that will contain the loaded features.
-        for _, feature_file_name in enumerate((t := tqdm(features_paths))): # iterate over npz features file names.
-            t.set_description(f"Loading features: {feature_file_name}") # update progress bar
+        all_features = [] #empty list that will contain the loaded features.
+        for _, feature_file_name in enumerate((t := tqdm(features_paths))): #iterate over npz features file names.
+            t.set_description(f"Loading features: {feature_file_name}") #update progress bar
             with np.load(feature_file_name) as features: 
-                all_features.append(features["arr_0"]) # load the feature file corresponding to current file name.
+                all_features.append(features["arr_0"]) #load the feature file corresponding to current file name.
 
-        all_features = np.concatenate(all_features, axis=0) # concatenate all the loaded features in a single numpy array.
+        all_features = np.concatenate(all_features, axis=0) #concatenate all the loaded features in a single numpy array.
 
         # load datasets
-        dfs = [] # empty list that will contain the dataframes loaded from the selected csv fles.
-        for _, filename in enumerate(tqdm(datasets_paths, desc="Loading csv datasets")): # iterate over csv file names.
-            df = pd.read_csv(filename, index_col=0) # read csv into dataframe
-            dfs.append(df) # append curr dataframe to all dataframes list.
-        dataset = pd.concat(dfs, ignore_index=True) # concat all dataframes in the list into one single dataframe.
+        dfs = [] #empty list that will contain the dataframes loaded from the selected csv fles.
+        for _, filename in enumerate(tqdm(datasets_paths, desc="Loading csv datasets")): #iterate over csv file names.
+            df = pd.read_csv(filename, index_col=0) #read csv into dataframe
+            dfs.append(df) #append curr dataframe to all dataframes list.
+        dataset = pd.concat(dfs, ignore_index=True) #concat all dataframes in the list into one single dataframe.
 
         # drop unwanted cameras
         names = dataset["frame_name"] # extract frame names from dataset.
-        cams = [] # empty list that will store the cam number of each frame name.
+        cams = [] #empty list that will store the cam number of each frame name.
         for name in names: 
             # find index of cam namber by finding substr "cam" in frame name and shifting index to + 4.
             index = name.find("cam") + 4 
             cams.append(int(name[index])) # append cam number casted to int.
 
-        dataset["cam"] = pd.Series(cams) # append pd.Series of cam numbers to dataset.
+        dataset["cam"] = pd.Series(cams) #append pd.Series of cam numbers to dataset.
 
         # drop unwanted cams.
         if self.cams: 
-            self.cams = [int(c) for c in self.cams] # cast to int the user submitted cam numbers.
+            self.cams = [int(c) for c in self.cams] #cast to int the user submitted cam numbers.
             cams_to_drop_mask = ~dataset["cam"].isin(self.cams) # create a mask with false where the column "cam" of the dataset contains an unwanted cam number.
-            dataset = dataset.loc[~cams_to_drop_mask, :] # drop the unwanted rows from dataset.
+            dataset = dataset.loc[~cams_to_drop_mask, :] #drop the unwanted rows from dataset.
             dataset.reset_index(drop=True, inplace=True) # reset dataframe index.
 
-            all_features = np.delete(all_features, cams_to_drop_mask.tolist(), axis=0) # remove unwanted features using the same unwanted cams mask.
-            all_features = normalize(all_features, axis=1, norm="l1") # normalize features using L1 norm.
+            all_features = np.delete(all_features, cams_to_drop_mask.tolist(), axis=0) #remove unwanted features using the same unwanted cams mask.
+            all_features = normalize(all_features, axis=1, norm="l1") #normalize features using L1 norm.
 
         # drop off air frames
         if self.drop_offair:
-            offair_mask = dataset["ar_labels"] == "actor_repositioning" # create mask with False where ar label is "actor_repositioning".
+            offair_mask = dataset["ar_labels"] == "actor_repositioning" #create mask with False where ar label is "actor_repositioning".
 
-            dataset = dataset.loc[~offair_mask, :] # drop "actor_repositioning" frames from dataframe using the created mask.
-            dataset.reset_index(drop=True, inplace=True) # reset dataframe index again.
+            dataset = dataset.loc[~offair_mask, :] #drop "actor_repositioning" frames from dataframe using the created mask.
+            dataset.reset_index(drop=True, inplace=True) #reset dataframe index again.
             all_features = np.delete(all_features, offair_mask.tolist(), axis=0) # delete actual features from all features vector using created mask.
 
         return dataset, all_features # return dataframe and features vector.
@@ -111,8 +111,8 @@ def load_and_split(features_folder: str, dataset_folder: str, train_actors: list
     
     # Load dataset and features
     
-    if val_actors: # if user inputs some validation actors use them as validation set.
-        train_dataloader = DatasetLoader(dataset_folder, features_folder, train_actors, train_cams, drop_offair) # istantiate DataLoader for train set.
+    if val_actors: #if user inputs some validation actors use them as validation set.
+        train_dataloader = DatasetLoader(dataset_folder, features_folder, train_actors, train_cams, drop_offair)# istantiate DataLoader for train set.
         val_dataloader = DatasetLoader(dataset_folder, features_folder, val_actors, val_cams, drop_offair) #istantiate DataLoader for val set.
         print("[STATUS] Load Train Set")
         train_dataset, train_features = train_dataloader.load() # load the train set.
@@ -152,7 +152,7 @@ def load_and_split(features_folder: str, dataset_folder: str, train_actors: list
         split = int(dataset.shape[0] * split_ratio)  # define split index based on split_ratio argument.
         
         print("[STATUS] Splitting in Train and Val sets")
-        X_train = np.array(features[0:split, :]) # split the train set.
+        X_train = np.array(features[0:split, :]) #split the train set.
         X_val = np.array(features[split:, :]) # split the val set.
 
         # load micro or macro labels depending on the user input.
