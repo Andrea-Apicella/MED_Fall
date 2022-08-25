@@ -26,39 +26,26 @@ def safe_mkdir(path) -> bool:
         return False
     
     
-def load_images(images_dir: str, images_names: list, resize_shape: tuple[int,int], extension = None) -> np.array:
+def load_images(images_dir: str, images_names: list, extension = None) -> np.array:
     """Loads images as numpy array. 
-    
-    Parameters
     ----------
-    images_dir: str. Path pointing to the folder that contains the images.
+    Parameters:    
+    - images_dir: str. Path pointing to the folder that contains the images.
     
-    images_names: list containing the titles of the images.
+    - images_names: list containing the titles of the images.
     
-    """
-
-    
-    if extension is None:
-        images_names = listdir_nohidden_sorted(images_dir)
-        
-        images = []
-        for name in images_names:
-            print(name)
-            sys.exit()
+    Outputs:
+    - images: np.array containing the loaded images.
+    """   
+    images = []
+    for name in images_names:
+        if extension is None:
             image = cv2.imread(f"{images_dir}/{name}")
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            image = cv2.resize(image, resize_shape)
-            images.append(image)
-        images = np.array(images)
-    else: 
-        images = []
-        for name in images_names:
+        else:
             image = cv2.imread(f"{images_dir}/{name}.{extension}")
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            image = cv2.resize(image, resize_shape)
-            image = image.astype(float) / 255
-            images.append(image)
-        images = np.array(images)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        images.append(image)
+    images = np.array(images)
     return images
     
 def show_images(images, rows=3, titles=None, figsize=(15, 10)):

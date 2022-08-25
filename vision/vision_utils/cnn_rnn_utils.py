@@ -82,8 +82,8 @@ class DatasetLoader:
 def load_and_split(features_folder: str, dataset_folder: str, train_actors: list, val_actors: list, train_cams: list,
                    val_cams: list, split_ratio: float, drop_offair: bool, undersample: bool, micro_classes: bool
                    ) -> tuple[np.ndarray, list, np.ndarray, list, list, list]:
+    
     # Load dataset and features
-
     if val_actors:
         train_dataloader = DatasetLoader(dataset_folder, features_folder, train_actors, train_cams, drop_offair)
         val_dataloader = DatasetLoader(dataset_folder, features_folder, val_actors, val_cams, drop_offair)
