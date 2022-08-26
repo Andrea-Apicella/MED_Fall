@@ -25,7 +25,7 @@ class VideoSeqGenerator(Sequence):
     
     """
 
-    def __init__(self, df: pd.DataFrame, seq_len: int, batch_size: int, frames_path: str, label_encoder,
+    def __init__(self, df: pd.DataFrame, seq_len: int, batch_size: int, stride:int, frames_path: str, label_encoder,
                  input_shape: tuple[int, int, int] = (224, 224, 3)):
         self.df = df,
         self.df = self.df[0]
@@ -36,8 +36,11 @@ class VideoSeqGenerator(Sequence):
         self.seq_len = self.seq_len[0]
         self.batch_size: int = batch_size,
         self.batch_size = self.batch_size[0]
-        self.input_shape: tuple = input_shape,
-        self.input_shape = self.input_shape[0]
+        self.stride = stride
+        self.input_shape: tuple = input_shape
+        print(self.input_shape)
+        print(type(self.input_shape))
+        #self.input_shape = self.input_shape[0]
 
         # add to the input dataframe a column with the cam number of each frame. If frame_name is "actor_1_bed_cam_1_0000", cam number is int("1").
         cams = []
@@ -101,13 +104,13 @@ class VideoSeqGenerator(Sequence):
             image = cv2.imread(f"{images_dir}/{name}")
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             image = cv2.resize(image, resize_shape)
-            # image = image.astype(float) / 255
+            #image = image.astype(float) / 255
             return image
         else:
             image = cv2.imread(f"{images_dir}/{name}.{extension}")
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             image = cv2.resize(image, resize_shape)
-            # image = image.astype(float) / 255
+            #image = image.astype(float) / 255
             return image
 
     def get_video_seq(self, df) -> tuple[np.array, np.array]:
@@ -124,8 +127,8 @@ class VideoSeqGenerator(Sequence):
         y = []  # instantiate empty list that will contain OneHotEncoded labels
 
         for i in range(0, self.batch_size):  # iterate over the batch_size
-
-            s: int = i * self.seq_len  # update stride (this splitting in time-series operation strides of seq_len each time).
+            
+            s: int = i * self.stride  # update stride (this splitting in time-series operation strides of seq_len each time).
             frames_seq: list = frames[s: s + self.seq_len]  # select seq_len frame_names from df
             labels_seq: list = labels[s: s + self.seq_len]  # select seq_len labels from df
             cams_seq: list = cams[s: s + self.seq_len]  # select seq_len cams from df

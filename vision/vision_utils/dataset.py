@@ -22,7 +22,7 @@ class TimeSeriesGenerator:
         self.stride = opt.stride
         self.num_features = opt.num_features
 
-    def __to_time_series(self, X: np.array, y: list, cams: list, n_series: int) -> tuple[list, list]:
+    def __to_time_series(self, X: np.array, y: list, cams: list, n_series: int) -> tuple[np.array, list]:
         """
         Splits features and labels in time-series.
         ----
@@ -48,72 +48,71 @@ class TimeSeriesGenerator:
             curr_cam = mode(cams_seq)  # calculate the most frequent cam number in the window.
 
             for i, _ in enumerate(cams_seq):  # for each cam number in the window.
-                if cams_seq[
-                    i] != curr_cam:  # if the cam number is not equal to the most frequent cam number in the window.
-                    features_seq[i] = np.zeros(
-                        self.num_features)  # pad features with a zeros array with length num_features.
-                labels_seq[i] = -10  # insert a negative value at the current label to later remove this unwanted label.
+                if cams_seq[i] != curr_cam:  # if the cam number is not equal to the most frequent cam number in the window.
+                    features_seq[i] = np.zeros(self.num_features)  # pad features with a zeros array with length num_features.
+                    labels_seq[i] = -10  # insert a negative value at the current label to later remove this unwanted label.
 
-        time_series[w] = features_seq  # update window with padding features.
+            time_series[w] = features_seq  # update window with padding features.
 
-        # convert frames' labels in one label per window
-        labels_seq = [l for l in labels_seq if
-                      l != -10]  # remove all labels of frames with cam number different from the most frequent one.
-        label = mode(labels_seq)  # calculate the most frequent label in the window.
-        y_s[w] = label  # use that most frequent label as label for the entire window.
+            # convert frames' labels in one label per window
+            labels_seq = [l for l in labels_seq if l != -10]  # remove all labels of frames with cam number different from the most frequent one.
+            label = mode(labels_seq)  # calculate the most frequent label in the window.
+            y_s[w] = label  # use that most frequent label as label for the entire window.
 
-        return time_series, y_s  # return windows of features and respective windows' labels.
+        return np.array(time_series), y_s  # return windows of features and respective windows' labels.
 
 
-def get_train_series(self, X: np.array, y: list, cams: list) -> tuple[np.ndarray, np.ndarray]:
-    """
-    Generates train windows.
-    -----
-    Parameters:
-    - X: np.array: contains the single frames' features.
-    - y: list: contains the single frames' labels.
-    - cams: list: contains the single frames' labels.
-    
-    outputs:
-    - X_series: np.array: windows of features.
-    - y_series: list: windows' labels.
-    
-    """
-    n_batches: int = len(
-        y) // self.batch_size  # calculate number of possible batches in the dataset given the batch size.
-    n_series: int = self.n_windows * n_batches  # calculate number of possibile windows in the dataset given the number of batches.
+    def get_train_series(self, X: np.array, y: list, cams: list) -> tuple[np.array, np.array]:
+        """
+        Generates train windows.
+        -----
+        Parameters:
+        - X: np.array: contains the single frames' features.
+        - y: list: contains the single frames' labels.
+        - cams: list: contains the single frames' labels.
 
-    X_series, y_series = self.__to_time_series(X, y, cams, n_series)  # split in windows.
+        outputs:
+        - X_series: np.array: windows of features.
+        - y_series: list: windows' labels.
 
-    self.labels_encoder = self.labels_encoder.fit(y_series)  # fit encoder on windows' labels.
-    self.classes_ = self.labels_encoder.classes_.tolist()  # add encoded labels as object's property.
-    mapping = dict(zip(self.labels_encoder.classes_, range(1,
-                                                           len(self.labels_encoder.classes_) + 1)))  # class mappings from categorical to numerical.
-    self.mapping = mapping  # add class mappings as object's property.
-    y_series = self.labels_encoder.transform(y_series)  # encode windows' labels.
+        """
+        n_batches: int = len(
+            y) // self.batch_size  # calculate number of possible batches in the dataset given the batch size.
+        n_series: int = self.n_windows * n_batches  # calculate number of possibile windows in the dataset given the number of batches.
 
-    return np.array(X_series), y_series,  # return windows' features and windows' labels.
+        X_series, y_series = self.__to_time_series(X, y, cams, n_series)  # split in windows.
+
+        self.labels_encoder = self.labels_encoder.fit(y_series)  # fit encoder on windows' labels.
+        self.classes_ = self.labels_encoder.classes_.tolist()  # add encoded labels as object's property.
+        mapping = dict(zip(self.labels_encoder.classes_, range(0,
+                                                               len(self.labels_encoder.classes_))))  # class mappings from categorical to numerical.
+        self.mapping = mapping  # add class mappings as object's property.
+        y_series = self.labels_encoder.transform(y_series)  # encode windows' labels.
+
+        return X_series, y_series,  # return windows' features and windows' labels.
 
 
-def get_val_series(self, X: np.ndarray, y: list, cams: list):
-    """
-    Generates validation windows.
-    -----
-    Parameters:
-    - X: np.array: contains the single frames' features.
-    - y: list: contains the single frames' labels.
-    - cams: list: contains the single frames' labels.
-    
-    Outputs:
-    - X_series: np.array: windows of features.
-    - y_series: list: windows' labels.
-    
-    """
-    n_batches: int = len(y) // self.batch_size  # calculate number of possible batches in the dataset.
-    n_series: int = self.n_windows * n_batches  # calculate number of possible windows in the dataset.
+    def get_val_series(self, X: np.ndarray, y: list, cams: list):
+        """
+        Generates validation windows.
+        -----
+        Parameters:
+        - X: np.array: contains the single frames' features.
+        - y: list: contains the single frames' labels.
+        - cams: list: contains the single frames' labels.
 
-    X_series, y_series = self.__to_time_series(X, y, cams,
-                                               n_series)  # split features in windows and calculate windows' labels.
-    y_series = self.labels_encoder.fit_transform(y_series)  # encode labels to numerical.
+        Outputs:
+        - X_series: np.array: windows of features.
+        - y_series: list: windows' labels.
 
-    return np.array(X_series), y_series  # return windows' features and window's labels.
+        """
+        n_batches: int = len(y) // self.batch_size  # calculate number of possible batches in the dataset.
+        n_series: int = self.n_windows * n_batches  # calculate number of possible windows in the dataset.
+
+        X_series, y_series = self.__to_time_series(X, y, cams,
+                                                   n_series)  # split features in windows and calculate windows' labels.
+        
+        
+        y_series = self.labels_encoder.fit_transform(y_series)  # encode labels to numerical.
+
+        return X_series, y_series  # return windows' features and window's labels.
