@@ -2,6 +2,7 @@ dataset/data/test_videos
 dataset/data/faulty_frames
 vision/vision_dataset/cnn_features
 vision/vision_dataset/extracted_frames
+vision/vision_dataset/extracted_frames_random_crop
 vision/vision_dataset/extracted_frames.zip
 vision/vision_dataset/vgg_features
 vision/vision_dataset/inception_features.zip

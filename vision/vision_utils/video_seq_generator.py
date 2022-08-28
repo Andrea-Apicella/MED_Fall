@@ -41,7 +41,24 @@ class VideoSeqGenerator(Sequence):
         print(self.input_shape)
         print(type(self.input_shape))
         #self.input_shape = self.input_shape[0]
+        
+        labels: list = df["macro_labels"].tolist()  # extract labels as list from df
 
+        y_series = []  # instantiate empty list that will contain windows' labels
+        
+        s_s = []
+        for i in range(0, len(self.df) // (self.batch_size*self.seq_len)):  # iterate over the batch_size
+            
+            s: int = i * self.stride  # update stride (this splitting in time-series operation strides of seq_len each time).
+            s_s.append(s)
+        
+            labels_seq: list = labels[s: s + self.seq_len]  # select seq_len labels from df
+
+            sequence_label = mode(labels_seq)  # calculate the mode of the frames' labels
+            y_series.append(sequence_label)
+        
+        self.windows_labels = y_series
+        self.s_s = s_s
         # add to the input dataframe a column with the cam number of each frame. If frame_name is "actor_1_bed_cam_1_0000", cam number is int("1").
         cams = []
         for name in self.df["frame_name"]:
@@ -144,6 +161,7 @@ class VideoSeqGenerator(Sequence):
                 curr_cam = cams_seq[j]  # select the j-th cam number in the window
                 curr_actor = actors_seq[j]  # select the j-th actor sequence in the window
                 curr_label = labels_seq[j]  # select the j-th label in the window
+                #print("curr_label", curr_label, "sequence_label", sequence_label)
 
                 # if the j-th frame has a different label, or cam number, or actor sequence respect to the corresponding modes of the window
                 # replace the j-th label and j-th frame_name with None 
@@ -187,50 +205,8 @@ class VideoSeqGenerator(Sequence):
 
         return X, y
 
-    def test(self):
-        series_labels = []
-        series_cams = []
-        n_missing = 0
-        for i in range(0, len(self.df), self.seq_len):
-            df = self.df.iloc[i:i + self.seq_len, :]
 
-            frames: list = df["frame_name"].tolist()
 
-            labels: list = df["macro_labels"].tolist()
-
-            cams: list = df["cam"].tolist()  # add cam column to dataframe
-
-            seq_label = mode(labels)
-            seq_cam = mode(cams)
-
-            for j in range(len(cams)):
-                # print("sequence_cam: ", sequence_cam)
-                curr_cam = cams[j]
-                # print("curr_cam: ", curr_cam)
-
-                if curr_cam != seq_cam:
-                    n_missing += 1
-                    labels[j] = None
-                    frames[j] = None
-
-            l = []
-            f = []
-            for label in labels:
-                if label is not None:
-                    l.append(label)
-            for frame in frames:
-                if frame is not None:
-                    f.append(frame)
-
-            labels_seq = l
-            frames_seq = f
-
-            series_labels.append(seq_label)
-            series_cams.append(seq_cam)
-        self.classes_ = series_labels
-        self.cams_ = series_cams
-        self.n_missing = n_missing
-        return series_labels, series_cams
 
     def __getitem__(self, index):
         """

@@ -8,10 +8,11 @@ import os
 import shutil
 from tqdm.auto import tqdm, trange
 from utils.utility_functions import listdir_nohidden_sorted, safe_mkdir
+import sys
 
 
 class FramesExtractor:
-    def __init__(self, videos_folder: str, output_folder: str, labels: str, ground_truth_folder: str, frame_size: tuple[int, int] = (224, 224)) -> pd.DataFrame:
+    def __init__(self, videos_folder: str, output_folder: str, labels: str, ground_truth_folder: str, frame_size= (224, 224)) -> pd.DataFrame:
         self.videos_folder = videos_folder
         self.output_folder = output_folder
         self.videos_paths = listdir_nohidden_sorted(self.videos_folder)
@@ -22,10 +23,11 @@ class FramesExtractor:
         print('Number of available sequences: ', self.available_sequences)
 
     def extract_frames(self):
+        safe_mkdir(self.output_folder)
         extracted_frames = []
 
         ground_truth = pd.DataFrame()
-        for _, folder in enumerate(t0 := tqdm(self.videos_paths[:self.available_sequences])):
+        for _, folder in enumerate(t0 := tqdm(self.videos_paths[:self.available_sequences], leave=False)):
             folder_name = folder.replace(self.videos_folder, "")
             t0.set_description(f"Processing folder: {folder_name}")
 
@@ -59,12 +61,14 @@ class FramesExtractor:
                         ret, frame = cap.read()
                         if not ret:
                             break
+                            
                         frame = tf.keras.preprocessing.image.smart_resize(frame, self.frame_size)
                         frame_name = f"{cam[start:end].replace(' ', '_')}_{str(f).zfill(4)}.jpg"
                         frame_name = frame_name.lower()
                         frame_path = f"{self.output_folder}/{frame_name}"
-                    
-                        cv2.imwrite(frame_path, frame)
+                        
+                        if not os.path.isfile(frame_path):
+                            cv2.imwrite(frame_path, frame)
 
                 finally:
                     cap.release()
@@ -78,12 +82,13 @@ if __name__ == "__main__":
         videos_folder       = f"{projectdir}/vision/vision_dataset/DATASET_WP8_resized",
         output_folder       = f"{projectdir}/vision/vision_dataset/extracted_frames",
         labels              = f"{projectdir}/dataset/labels.xlsx",
-        ground_truth_folder = f"{projectdir}/vision/vision_dataset/ground_truth",
+        ground_truth_folder = f"{projectdir}/vision/vision_dataset/ground_truth_new",
     )
     
     fe.extract_frames()
     
-    extracted_frames_persistent = '/home/jovyan/work/persistent/extracted_frames/'
+    extracted_frames_resized = '/home/jovyan/work/persistent/extracted_frames/'
+    safe_mkdir(extracted_frames_resized)
     dir_created = safe_mkdir(extracted_frames_persitent)
     if dir_created:
         shutil.copy(fe.output_folder, extracted_frames_persistent)
