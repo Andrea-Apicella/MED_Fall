@@ -57,18 +57,20 @@ class FramesExtractor:
                 cap = cv2.VideoCapture(cam)
                 try:
                     n_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-                    for f in trange(n_frames, leave=False):
+                    for f in (t2:=trange(n_frames, leave=False)):
                         ret, frame = cap.read()
                         if not ret:
                             break
-                            
-                        frame = tf.keras.preprocessing.image.smart_resize(frame, self.frame_size)
+                        
                         frame_name = f"{cam[start:end].replace(' ', '_')}_{str(f).zfill(4)}.jpg"
                         frame_name = frame_name.lower()
                         frame_path = f"{self.output_folder}/{frame_name}"
                         
                         if not os.path.isfile(frame_path):
+                            frame = tf.keras.preprocessing.image.smart_resize(frame, self.frame_size)
                             cv2.imwrite(frame_path, frame)
+                        else: 
+                            t2.set_description("already extracted")
 
                 finally:
                     cap.release()
