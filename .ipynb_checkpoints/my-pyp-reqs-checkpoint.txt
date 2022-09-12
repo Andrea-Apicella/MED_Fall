@@ -1,4 +1,4 @@
-nb-black
+nb_black
 natsort
 opencv-python
 openpyxl
